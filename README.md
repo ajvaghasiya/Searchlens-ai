@@ -28,8 +28,7 @@ actually understand how they work than reading about them. It also gave me
 a single project that maps to Technical SEO, SEO Engineering, Website &
 Conversion, and GEO/Digital Trust roles instead of three unrelated demos.
 
-Development started in **June 2026**. That's the real start date, not
-backdated, if you're checking commit history against a CV.
+
 
 ## Status
 
