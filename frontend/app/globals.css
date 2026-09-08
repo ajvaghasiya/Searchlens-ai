@@ -1,0 +1,20 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  color: #0f172a;
+  background: #f8fafc;
+}
+
+.card {
+  @apply bg-white rounded-xl border border-slate-200 shadow-sm p-6;
+}
+
+.btn-primary {
+  @apply inline-block bg-accent text-white font-medium px-5 py-2.5 rounded-lg hover:opacity-90 transition;
+}
+
+.btn-secondary {
+  @apply inline-block bg-white text-ink font-medium px-5 py-2.5 rounded-lg border border-slate-300 hover:bg-slate-50 transition;
+}
