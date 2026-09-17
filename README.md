@@ -102,7 +102,6 @@ global keyword database.
 | **Core data source** | Crawls only the sites you point it at, server logs, and first-party SDK tracking | Continuously crawls the entire public web |
 | **Backlink & Keyword Index** | None, no web-scale crawl or keyword search volume data | Massive global index, which is what you pay them for |
 | **Log-File Crawl Analysis** | Yes, ingests Nginx/Apache logs to find wasted crawl budget and 5xx bottlenecks | No, they simulate crawls but cannot see how Googlebot actually interacts with your server |
-| **On-site behaviour data** | Yes, tracks real clicks, scroll, and content engagement | None, no access to your site's visitor behaviour |
 | **Automated Pipeline (CI/CD style)** | Yes, fully orchestrated via n8n for custom workflows and alerts | Proprietary scheduled emails and reports, but not an open automation pipeline |
 | **AI/GEO visibility tracking** | Yes, built in, queries real AI providers directly | Adding some AI features, but not their core historical product |
 | **Infrastructure & Pricing** | Free, self-hosted, fully Dockerized | Hosted SaaS, from roughly $129+/month |
