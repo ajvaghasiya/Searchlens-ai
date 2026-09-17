@@ -12,7 +12,6 @@ import {
 } from "@/lib/api";
 import { MetricCard } from "@/components/MetricCard";
 import { ScoreGauge } from "@/components/ScoreGauge";
-import { Heatmap } from "@/components/Heatmap";
 import { BarChart } from "@/components/BarChart";
 
 type Tab = "overview" | "technical" | "behaviour" | "search" | "geo" | "automation";
@@ -261,7 +260,10 @@ function TechnicalTab({ websiteId, pageUrl }: { websiteId: string; pageUrl: stri
     try {
       const urlList = urls.split("\n").map((u) => u.trim()).filter(Boolean);
       const fresh = await api.runCrawl(websiteId, urlList);
-      setResults((prev) => [...fresh, ...prev]);
+      setResults((prev) => {
+        const freshUrls = new Set(fresh.map((r) => r.url));
+        return [...fresh, ...prev.filter((r) => !freshUrls.has(r.url))];
+      });
     } finally {
       setLoading(false);
     }
@@ -356,21 +358,18 @@ function BehaviourTab({ websiteId, pageUrl }: { websiteId: string; pageUrl: stri
   if (!data) return <p className="text-sm text-slate-500">Loading...</p>;
 
   return (
-    <div className="grid sm:grid-cols-2 gap-6">
-      <Heatmap cells={data.click_grid} />
-      <div className="space-y-6">
-        <div className="grid grid-cols-2 gap-4">
-          <MetricCard label="Avg. scroll depth" value={`${data.scroll.avg_scroll_depth_pct}%`} hint={`${data.scroll.sessions} sessions`} />
-          <MetricCard label="CTA click rate" value={`${data.cta_click_rate_pct}%`} />
-        </div>
-        {data.section_engagement.length > 0 && (
-          <BarChart
-            title="Content engagement by section"
-            labels={data.section_engagement.map((s) => s.section_id)}
-            values={data.section_engagement.map((s) => s.view_rate_pct)}
-          />
-        )}
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <MetricCard label="Avg. scroll depth" value={`${data.scroll.avg_scroll_depth_pct}%`} hint={`${data.scroll.sessions} sessions`} />
+        <MetricCard label="CTA click rate" value={`${data.cta_click_rate_pct}%`} />
       </div>
+      {data.section_engagement.length > 0 && (
+        <BarChart
+          title="Content engagement by section"
+          labels={data.section_engagement.map((s) => s.section_id)}
+          values={data.section_engagement.map((s) => s.view_rate_pct)}
+        />
+      )}
     </div>
   );
 }

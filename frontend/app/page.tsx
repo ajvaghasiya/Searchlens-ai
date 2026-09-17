@@ -32,7 +32,7 @@ export default function HomePage() {
           to fix first, in plain language.
         </p>
         <div className="mt-8 flex justify-center gap-4">
-          <Link href="/dashboard" className="btn-primary">See the demo dashboard</Link>
+          <Link href="/dashboard" className="btn-primary">Dashboard</Link>
           <Link href="/features" className="btn-secondary">How it works</Link>
         </div>
       </section>

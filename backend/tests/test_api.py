@@ -47,3 +47,19 @@ def test_geo_config_and_run_demo_mode(client):
     summary = client.get(f"/api/v1/websites/{website_id}/geo/summary")
     assert summary.status_code == 200
     assert "visibility_score" in summary.json()["summary"]
+
+
+def test_latest_crawl_deduplicates_by_url(client):
+    create = client.post("/api/v1/websites", json={"domain": "example.org", "name": "Org"})
+    website_id = create.json()["id"]
+
+    # Crawl the same URL twice
+    client.post(f"/api/v1/websites/{website_id}/crawl", json={"urls": ["https://example.org/about"]})
+    client.post(f"/api/v1/websites/{website_id}/crawl", json={"urls": ["https://example.org/about"]})
+
+    latest = client.get(f"/api/v1/websites/{website_id}/crawl/latest")
+    assert latest.status_code == 200
+    data = latest.json()
+    assert len(data) == 1
+    assert data[0]["url"] == "https://example.org/about"
+

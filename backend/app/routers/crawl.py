@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -57,10 +58,33 @@ def run_crawl(website_id: str, payload: CrawlRequest, db: Session = Depends(get_
 @router.get("/latest", response_model=list[CrawlResultOut])
 def latest_crawl(website_id: str, db: Session = Depends(get_db)):
     get_website_or_404(website_id, db)
-    return (
+    subquery = (
+        db.query(
+            CrawlResult.url,
+            func.max(CrawlResult.crawled_at).label("max_crawled_at"),
+        )
+        .filter(CrawlResult.website_id == website_id)
+        .group_by(CrawlResult.url)
+        .subquery()
+    )
+
+    rows = (
         db.query(CrawlResult)
+        .join(
+            subquery,
+            (CrawlResult.url == subquery.c.url)
+            & (CrawlResult.crawled_at == subquery.c.max_crawled_at),
+        )
         .filter(CrawlResult.website_id == website_id)
         .order_by(CrawlResult.crawled_at.desc())
         .limit(50)
         .all()
     )
+
+    seen_urls: set[str] = set()
+    deduped: list[CrawlResult] = []
+    for r in rows:
+        if r.url not in seen_urls:
+            seen_urls.add(r.url)
+            deduped.append(r)
+    return deduped
