@@ -1,0 +1,102 @@
+{
+  "id": "1",
+  "name": "SearchLens SEO Monitoring Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "run-monitoring",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [200, 300],
+      "webhookId": "searchlens-automation"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'http://backend:8000/api/v1/websites/' + $json.query.website_id + '/crawl' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "Authorization", "value": "Bearer {{ $env[\"SEARCHLENS_API_KEY\"] }}"}
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ urls: ['https://' + $json.query.domain] }) }}",
+        "options": {}
+      },
+      "name": "Trigger Crawl",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [400, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'http://backend:8000/api/v1/websites/' + $('Webhook').item.json.query.website_id + '/geo/run' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "Authorization", "value": "Bearer {{ $env[\"SEARCHLENS_API_KEY\"] }}"}
+          ]
+        },
+        "options": {}
+      },
+      "name": "Run GEO Analysis",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [400, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'http://backend:8000/api/v1/websites/' + $('Webhook').item.json.query.website_id + '/automation-log' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "Content-Type", "value": "application/json"}
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ message: 'SearchLens Pipeline Executed Successfully!\\n\\n✓ Crawled URL: https://' + $('Webhook').item.json.query.domain + '\\n✓ GEO Visibility Check triggered.\\n\\nCheck the Overview tab for updated AI-generated SEO Insights based on the new data.', status: 'success' }) }}",
+        "options": {}
+      },
+      "name": "Save Log to Dashboard",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [700, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {"node": "Trigger Crawl", "type": "main", "index": 0},
+          {"node": "Run GEO Analysis", "type": "main", "index": 0}
+        ]
+      ]
+    },
+    "Trigger Crawl": {
+      "main": [
+        [
+          {"node": "Save Log to Dashboard", "type": "main", "index": 0}
+        ]
+      ]
+    },
+    "Run GEO Analysis": {
+      "main": [
+        [
+          {"node": "Save Log to Dashboard", "type": "main", "index": 0}
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {}
+}

@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
 from app.database import Base, engine
-from app.routers import websites, crawl, track, seo, geo, insights
+from app.routers import websites, crawl, track, seo, geo, insights, log_analysis
 
 settings = get_settings()
 
@@ -35,8 +35,14 @@ app.include_router(track.router, prefix=settings.API_V1_PREFIX)
 app.include_router(seo.router, prefix=settings.API_V1_PREFIX)
 app.include_router(geo.router, prefix=settings.API_V1_PREFIX)
 app.include_router(insights.router, prefix=settings.API_V1_PREFIX)
+app.include_router(log_analysis.router, prefix=settings.API_V1_PREFIX)
 
+
+from fastapi.staticfiles import StaticFiles
 
 @app.get("/health")
 def health():
     return {"status": "ok", "app": settings.APP_NAME}
+
+# Serve the tracking SDK (tracker.js)
+app.mount("/sdk", StaticFiles(directory="../sdk"), name="sdk")

@@ -139,6 +139,33 @@ class GeoRunOut(BaseModel):
     class Config:
         from_attributes = True
 
+class GeoConfigOut(BaseModel):
+    id: str
+    brand_name: str
+    competitors: list[str]
+    queries: list[str]
+    geo_runs: list[GeoRunOut]
+
+    class Config:
+        from_attributes = True
+
+
+# ---------- Automation ----------
+
+class AutomationLogCreate(BaseModel):
+    message: str
+    status: str = "success"
+
+
+class AutomationLogOut(BaseModel):
+    id: str
+    timestamp: datetime
+    message: str
+    status: str
+
+    class Config:
+        from_attributes = True
+
 
 class GeoSummary(BaseModel):
     visibility_score: int

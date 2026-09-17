@@ -119,4 +119,9 @@ export const api = {
       search: SearchRow | null;
       insights: Insight[];
     }>(`/websites/${websiteId}/insights?page_url=${encodeURIComponent(pageUrl)}`),
+
+  triggerAutomation: (websiteId: string) =>
+    request(`/websites/${websiteId}/trigger-automation`, { method: "POST" }),
+  getAutomationLogs: (websiteId: string) =>
+    request<{ id: string; timestamp: string; message: string; status: string }[]>(`/websites/${websiteId}/automation-log`),
 };

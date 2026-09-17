@@ -43,10 +43,7 @@ synthetic data when reading the code.
 
 ## Why these tradeoffs
 
-**SQLite by default, Postgres via docker-compose.** A contributor should be
-able to `pip install -r requirements.txt && uvicorn app.main:app` and have
-a working API in under a minute. `docker-compose up` gets the full stack
-including Postgres for anything closer to production.
+**SQLite by default, Postgres via docker-compose.** The project is now fully Dockerized. A contributor can just run `docker compose -f docker-compose.dev.yml up` and have a working API with hot-reloading in under a minute, or use `docker compose up` for the full production stack including Postgres. No local Python or Node environment setup is required.
 
 **API-key auth instead of full user accounts.** Each website gets a random
 key at creation time (`Website.api_key`). It doubles as the "site key" used

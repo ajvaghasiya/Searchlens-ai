@@ -15,7 +15,7 @@ import { ScoreGauge } from "@/components/ScoreGauge";
 import { Heatmap } from "@/components/Heatmap";
 import { BarChart } from "@/components/BarChart";
 
-type Tab = "overview" | "technical" | "behaviour" | "search" | "geo";
+type Tab = "overview" | "technical" | "behaviour" | "search" | "geo" | "automation";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "overview", label: "Overview" },
@@ -23,6 +23,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "behaviour", label: "Behaviour" },
   { id: "search", label: "Search Analytics" },
   { id: "geo", label: "AI Visibility (GEO)" },
+  { id: "automation", label: "Automated Pipeline" },
 ];
 
 const severityColor: Record<string, string> = {
@@ -34,7 +35,7 @@ const severityColor: Record<string, string> = {
 export default function DashboardPage() {
   const [websites, setWebsites] = useState<Website[]>([]);
   const [websiteId, setWebsiteId] = useState<string>("");
-  const [pageUrl, setPageUrl] = useState("https://example.com/technical-seo-guide");
+  const [pageUrl, setPageUrl] = useState("");
   const [tab, setTab] = useState<Tab>("overview");
   const [loadingSites, setLoadingSites] = useState(true);
 
@@ -43,12 +44,24 @@ export default function DashboardPage() {
       .listWebsites()
       .then((sites) => {
         setWebsites(sites);
-        if (sites.length && !websiteId) setWebsiteId(sites[0].id);
+        if (sites.length && !websiteId) {
+          setWebsiteId(sites[0].id);
+          setPageUrl(`https://${sites[0].domain}`);
+        }
       })
       .catch(() => {})
       .finally(() => setLoadingSites(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const activeWebsite = websites.find(w => w.id === websiteId);
+
+  // Auto-update pageUrl when website changes
+  useEffect(() => {
+    if (activeWebsite && !pageUrl.includes(activeWebsite.domain)) {
+      setPageUrl(`https://${activeWebsite.domain}`);
+    }
+  }, [websiteId, activeWebsite]);
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-10">
@@ -58,6 +71,9 @@ export default function DashboardPage() {
           onCreated={(site) => {
             setWebsites((prev) => [site, ...prev]);
             setWebsiteId(site.id);
+            setPageUrl(`https://${site.domain}`);
+            setTab("automation");
+            api.triggerAutomation(site.id);
           }}
         />
       </div>
@@ -80,7 +96,7 @@ export default function DashboardPage() {
           </select>
         </div>
         <div className="flex-1 min-w-[280px]">
-          <label className="text-xs text-slate-500">Page URL</label>
+          <label className="text-xs text-slate-500">Active Page URL</label>
           <input
             className="mt-1 w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
             value={pageUrl}
@@ -113,7 +129,8 @@ export default function DashboardPage() {
           {tab === "technical" && <TechnicalTab websiteId={websiteId} pageUrl={pageUrl} />}
           {tab === "behaviour" && <BehaviourTab websiteId={websiteId} pageUrl={pageUrl} />}
           {tab === "search" && <SearchTab websiteId={websiteId} />}
-          {tab === "geo" && <GeoTab websiteId={websiteId} />}
+          {tab === "geo" && <GeoTab websiteId={websiteId} websiteName={activeWebsite?.name || ""} />}
+          {tab === "automation" && <AutomationTab websiteId={websiteId} />}
         </>
       )}
     </div>
@@ -230,6 +247,11 @@ function TechnicalTab({ websiteId, pageUrl }: { websiteId: string; pageUrl: stri
   const [results, setResults] = useState<CrawlResult[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // Auto-sync the text area when the active pageUrl changes
+  useEffect(() => {
+    setUrls(pageUrl);
+  }, [pageUrl]);
+
   useEffect(() => {
     api.latestCrawl(websiteId).then(setResults).catch(() => {});
   }, [websiteId]);
@@ -262,21 +284,54 @@ function TechnicalTab({ websiteId, pageUrl }: { websiteId: string; pageUrl: stri
       <div className="space-y-4">
         {results.map((r) => (
           <div key={r.id} className="card">
-            <div className="flex items-start justify-between">
+            <div className="flex items-start justify-between mb-4">
               <div>
                 <p className="text-sm font-medium text-ink break-all">{r.url}</p>
                 <p className="text-xs text-slate-500 mt-1">
-                  {r.title || "No title"} &middot; {r.word_count ?? 0} words &middot; status {r.status_code ?? "n/a"}
+                  {r.title || "No title"}
                 </p>
               </div>
-              <div className="text-2xl font-semibold" style={{ color: (r.seo_score ?? 0) >= 80 ? "#16a34a" : (r.seo_score ?? 0) >= 50 ? "#d97706" : "#dc2626" }}>
+              <div className="text-3xl font-semibold ml-4" style={{ color: (r.seo_score ?? 0) >= 80 ? "#16a34a" : (r.seo_score ?? 0) >= 50 ? "#d97706" : "#dc2626" }}>
                 {r.seo_score ?? "-"}
               </div>
             </div>
+            
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4 border-t border-b border-slate-100 py-4">
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-1">Status</p>
+                <p className="text-sm text-slate-700">{r.status_code ?? "n/a"} <span className="text-xs text-slate-400 ml-1">({r.response_time_ms ? `${r.response_time_ms}ms` : '-'})</span></p>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-1">Content</p>
+                <p className="text-sm text-slate-700">{r.word_count ?? 0} words</p>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-1">Headings</p>
+                <p className="text-sm text-slate-700">{r.h1_count ?? 0} H1 tag(s)</p>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-1">Links</p>
+                <p className="text-sm text-slate-700">{r.internal_links ?? 0} int / {r.external_links ?? 0} ext</p>
+              </div>
+              <div className="col-span-2">
+                <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-1">Meta Description</p>
+                <p className="text-xs text-slate-600 line-clamp-2">{r.meta_description || "None"}</p>
+              </div>
+              <div className="col-span-2">
+                <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-1">Directives</p>
+                <p className="text-xs text-slate-600 truncate">
+                  Robots: {r.robots_meta || "none"} &middot; 
+                  Schema: {r.has_structured_data ? r.structured_data_types.join(", ") : "none"}
+                </p>
+                <p className="text-[10px] text-slate-400 truncate mt-1">Canonical: {r.canonical_url || "none"}</p>
+              </div>
+            </div>
+
             {r.issues.length > 0 && (
-              <div className="mt-3 space-y-1">
+              <div className="space-y-1">
+                <p className="text-xs font-semibold text-slate-700 mb-2">Detected Issues</p>
                 {r.issues.map((issue, i) => (
-                  <div key={i} className={`text-xs border rounded px-2 py-1 ${severityColor[issue.severity]}`}>
+                  <div key={i} className={`text-xs border rounded px-3 py-1.5 ${severityColor[issue.severity]}`}>
                     {issue.message}
                   </div>
                 ))}
@@ -385,13 +440,18 @@ function SearchTab({ websiteId }: { websiteId: string }) {
   );
 }
 
-function GeoTab({ websiteId }: { websiteId: string }) {
-  const [brand, setBrand] = useState("");
+function GeoTab({ websiteId, websiteName }: { websiteId: string, websiteName: string }) {
+  const [brand, setBrand] = useState(websiteName);
   const [competitors, setCompetitors] = useState("");
   const [queries, setQueries] = useState("");
   const [summary, setSummary] = useState<GeoSummary | null>(null);
   const [insight, setInsight] = useState<Insight | null>(null);
   const [busy, setBusy] = useState(false);
+
+  // Auto-sync brand when website changes
+  useEffect(() => {
+    if (websiteName && !brand) setBrand(websiteName);
+  }, [websiteName]);
 
   useEffect(() => {
     api.getGeoSummary(websiteId).then((res) => {
@@ -463,6 +523,60 @@ function GeoTab({ websiteId }: { websiteId: string }) {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+function AutomationTab({ websiteId }: { websiteId: string }) {
+  const [logs, setLogs] = useState<{id: string, timestamp: string, message: string, status: string}[]>([]);
+  const [busy, setBusy] = useState(false);
+
+  function fetchLogs() {
+    api.getAutomationLogs(websiteId).then(setLogs).catch(() => {});
+  }
+
+  useEffect(() => {
+    fetchLogs();
+  }, [websiteId]);
+
+  async function triggerPipeline() {
+    setBusy(true);
+    try {
+      await api.triggerAutomation(websiteId);
+      let polls = 0;
+      const interval = setInterval(() => {
+        fetchLogs();
+        polls++;
+        if (polls > 10) clearInterval(interval);
+      }, 2000);
+    } finally {
+      setTimeout(() => setBusy(false), 2000);
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="card flex items-center justify-between">
+        <div>
+          <h2 className="text-sm font-semibold text-ink mb-1">n8n Orchestration Pipeline</h2>
+          <p className="text-xs text-slate-500">Triggers the n8n webhook, which coordinates crawling and AI checks, then posts a formatted summary back here.</p>
+        </div>
+        <button className="btn-primary text-sm whitespace-nowrap ml-4" onClick={triggerPipeline} disabled={busy}>
+          {busy ? "Running Pipeline..." : "Run Automation Now"}
+        </button>
+      </div>
+
+      <div className="space-y-4">
+        {logs.map((log) => (
+          <div key={log.id} className="rounded-xl border shadow-sm p-6 bg-slate-900 text-slate-300 border-slate-800">
+            <div className="flex justify-between items-center mb-4 border-b border-slate-700 pb-2">
+              <span className="text-xs text-emerald-400 font-mono">[{new Date(log.timestamp).toLocaleTimeString()}] Pipeline {log.status}</span>
+            </div>
+            <pre className="text-xs whitespace-pre-wrap font-mono leading-relaxed">{log.message}</pre>
+          </div>
+        ))}
+        {logs.length === 0 && <p className="text-sm text-slate-500">No automation logs yet.</p>}
+      </div>
     </div>
   );
 }
