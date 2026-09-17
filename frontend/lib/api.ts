@@ -25,24 +25,32 @@ export interface Website {
 }
 
 export interface CrawlIssue {
-  code: string;
-  severity: "critical" | "warning" | "info";
+  code?: string;
+  severity: string;
   message: string;
 }
 
 export interface CrawlResult {
   id: string;
   url: string;
-  status_code: number | null;
-  seo_score: number | null;
-  title: string | null;
-  meta_description: string | null;
-  h1_count: number | null;
-  word_count: number | null;
-  images_missing_alt: number | null;
-  has_structured_data: boolean;
+  title?: string | null;
+  title_length?: number | null;
+  status_code?: number | null;
+  response_time_ms?: number | null;
+  seo_score?: number | null;
+  word_count?: number | null;
+  h1_count?: number | null;
+  internal_links?: number | null;
+  external_links?: number | null;
+  meta_description?: string | null;
+  meta_description_length?: number | null;
+  robots_meta?: string | null;
+  has_structured_data?: boolean;
+  structured_data_types: string[];
+  canonical_url?: string | null;
+  images_missing_alt?: number | null;
   issues: CrawlIssue[];
-  crawled_at: string;
+  crawled_at?: string;
 }
 
 export interface SectionEngagement {
@@ -119,4 +127,9 @@ export const api = {
       search: SearchRow | null;
       insights: Insight[];
     }>(`/websites/${websiteId}/insights?page_url=${encodeURIComponent(pageUrl)}`),
+
+  triggerAutomation: (websiteId: string) =>
+    request(`/websites/${websiteId}/trigger-automation`, { method: "POST" }),
+  getAutomationLogs: (websiteId: string) =>
+    request<{ id: string; timestamp: string; message: string; status: string }[]>(`/websites/${websiteId}/automation-log`),
 };

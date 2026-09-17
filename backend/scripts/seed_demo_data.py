@@ -6,7 +6,7 @@ crawler and the demo-mode fallback in google_integrations.py; this script
 only fabricates the behaviour events, since those need a live tracker.js
 install to generate for real.
 
-Run with:  python -m scripts.seed_demo_data
+Run with:  docker compose exec backend python -m scripts.seed_demo_data
 """
 import random
 import sys

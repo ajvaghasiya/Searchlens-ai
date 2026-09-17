@@ -11,10 +11,10 @@ Add this before the closing `</body>` tag of any page you want to track:
 <script>
   window.SearchLensConfig = {
     siteKey: "slai_your_site_key_here",
-    apiEndpoint: "https://your-api-domain.com/api/v1/track" // optional, defaults shown in tracker.js
+    apiEndpoint: "http://localhost:8000/api/v1/track" // for local Docker testing
   };
 </script>
-<script src="https://your-api-domain.com/tracker.js" defer></script>
+<script src="http://localhost:8000/sdk/tracker.js" defer></script>
 ```
 
 Get `siteKey` by registering a site: `POST /api/v1/websites`, the response

@@ -32,6 +32,7 @@ class Website(Base):
     crawls = relationship("CrawlResult", back_populates="website", cascade="all, delete-orphan")
     events = relationship("BehaviorEvent", back_populates="website", cascade="all, delete-orphan")
     geo_configs = relationship("GeoConfig", back_populates="website", cascade="all, delete-orphan")
+    automation_logs = relationship("AutomationLog", back_populates="website", cascade="all, delete-orphan")
 
 
 class CrawlResult(Base):
@@ -137,3 +138,15 @@ class GeoRun(Base):
     run_at = Column(DateTime, default=datetime.utcnow)
 
     config = relationship("GeoConfig", back_populates="runs")
+
+
+class AutomationLog(Base):
+    __tablename__ = "automation_logs"
+
+    id = Column(String, primary_key=True, default=gen_uuid)
+    website_id = Column(String, ForeignKey("websites.id"), nullable=False)
+    timestamp = Column(DateTime, default=datetime.utcnow)
+    message = Column(Text, nullable=False)
+    status = Column(String, default="success")
+
+    website = relationship("Website", back_populates="automation_logs")

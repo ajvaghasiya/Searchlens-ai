@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 # ---------- Websites ----------
@@ -115,26 +115,58 @@ class GeoConfigCreate(BaseModel):
     queries: list[str]
 
 
-class GeoConfigOut(BaseModel):
-    id: str
-    brand_name: str
-    competitors: list[str]
-    queries: list[str]
-    created_at: datetime
-
-    class Config:
-        from_attributes = True
-
-
 class GeoRunOut(BaseModel):
+    id: str | None = None
     provider: str
     query: str
     brand_mentioned: bool
-    mention_position: int | None
-    competitors_mentioned: list[str]
-    cited_domains: list[str]
-    sentiment: str | None
-    run_at: datetime
+    mention_position: int | None = None
+    competitors_mentioned: list[str] = []
+    cited_domains: list[str] = []
+    sentiment: str | None = None
+    raw_response: str | None = None
+    run_at: datetime | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class GeoConfigOut(BaseModel):
+    id: str
+    website_id: str | None = None
+    brand_name: str
+    competitors: list[str] = []
+    queries: list[str] = []
+    created_at: datetime | None = None
+
+    # Read `runs` from the SQLAlchemy object, emit `geo_runs` in JSON.
+    geo_runs: list[GeoRunOut] = Field(
+        default_factory=list,
+        validation_alias="runs",
+        serialization_alias="geo_runs",
+    )
+
+    model_config = ConfigDict(
+        from_attributes=True,
+        populate_by_name=True,
+    )
+
+
+GeoRunResponse = GeoRunOut
+GeoConfigResponse = GeoConfigOut
+
+
+# ---------- Automation ----------
+
+class AutomationLogCreate(BaseModel):
+    message: str
+    status: str = "success"
+
+
+class AutomationLogOut(BaseModel):
+    id: str
+    timestamp: datetime
+    message: str
+    status: str
 
     class Config:
         from_attributes = True
